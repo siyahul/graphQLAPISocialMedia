@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../../Models/userModel");
+const checkAuth = require("../../utils/auth-verify");
 const { UserInputError } = require("apollo-server");
 const {
   validateRegisterInput,
@@ -32,6 +33,62 @@ module.exports = {
     },
   },
   Mutation: {
+    async followUser(_, { userId }, context) {
+      const { id } = checkAuth(context);
+      const user = await User.findById(id);
+      const followUser = await User.findById(userId);
+      if (user && followUser) {
+        const isFollowing =
+          user.followings.find(
+            (following) => String(following) === String(userId)
+          ) &&
+          followUser.followers.find(
+            (follower) => String(follower) === String(user._id)
+          );
+        if (!isFollowing) {
+          user.followings.unshift(followUser._id);
+          followUser.followers.unshift(user._id);
+          await followUser.save();
+          await user.save();
+          return "followed user successfully";
+        } else {
+          throw new Error("You are already following");
+        }
+      } else {
+        throw new Error("User not found");
+      }
+    },
+    async unFollowUser(_, { userId }, context) {
+      const { id } = checkAuth(context);
+      const user = await User.findById(id);
+      const followUser = await User.findById(userId);
+      if (user && followUser) {
+        const isFollowing =
+          user.followings.find(
+            (following) => String(following) === String(userId)
+          ) &&
+          followUser.followers.find(
+            (follower) => String(follower) === String(user._id)
+          );
+        if (isFollowing) {
+          const index = user.followings.indexOf(userId);
+          user.followings.splice(index, 1);
+
+          const index2 = followUser.followers.indexOf(user._id);
+          followUser.followers.splice(index2, 1);
+
+          await user.save();
+          await followUser.save();
+
+          return "unFollowed user successfully";
+        }
+        else{
+          throw new Error('You are not following');
+        }
+      } else {
+        throw new Error("User not found");
+      }
+    },
     async login(_, { userName, password }) {
       const { errors, valid } = validateLoginInput(userName, password);
       if (!valid) {
@@ -88,6 +145,8 @@ module.exports = {
         userName,
         password,
         createdAt: new Date().toISOString(),
+        followers: [],
+        followings: [],
       });
       try {
         var res = await newUser.save();

@@ -16,7 +16,6 @@ mongoose
     console.log(err);
   });
 const pubSub = new PubSub();
-pubSub.asyncIterator
 const server = new ApolloServer({
   typeDefs,
   resolvers,
