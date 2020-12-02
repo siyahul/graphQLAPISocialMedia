@@ -40,8 +40,8 @@ module.exports = {
           } else {
             throw new AuthenticationError("action not allowed");
           }
-        }else{
-          throw new Error('Post not found')
+        } else {
+          throw new Error("Post not found");
         }
       } catch (err) {
         throw new Error(err);
@@ -49,7 +49,6 @@ module.exports = {
     },
     async createPost(_, { caption }, context) {
       const user = checkAuth(context);
-      console.log(user);
       if (user) {
         const newPost = new Post({
           caption,
@@ -59,11 +58,20 @@ module.exports = {
         });
         try {
           const post = await newPost.save();
+          context.pubSub.publish("NEW_POST", {
+            newPost: post,
+          });
+
           return post;
         } catch (err) {
           throw new Error(err);
         }
       }
+    },
+  },
+  Subscription: {
+    newPost: {
+      subscribe: (_, __, { pubSub }) => pubSub.asyncIterator("NEW_POST"),
     },
   },
 };

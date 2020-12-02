@@ -1,4 +1,4 @@
-const { ApolloServer } = require("apollo-server");
+const { ApolloServer, PubSub } = require("apollo-server");
 const mongoose = require("mongoose");
 const typeDefs = require("./GraphQL/typedefs");
 const resolvers = require("./GraphQL/resolvers");
@@ -15,11 +15,12 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
-
+const pubSub = new PubSub();
+pubSub.asyncIterator
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req }) => ({req})
+  context: ({ req }) => ({ req, pubSub }),
 });
 
 server
